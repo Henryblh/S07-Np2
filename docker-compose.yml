@@ -22,12 +22,13 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Diz para o Spring Boot parar de usar o H2 e usar as configs do MySQL
       - SPRING_PROFILES_ACTIVE=mysql
-      # Aponta a URL do banco para o nome do container do MySQL (mysql-db)
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/petclinic
+      - SPRING_DATASOURCE_URL=jdbc:mysql://petclinic-mysql:3306/petclinic
     depends_on:
       - mysql-db
+
+    restart:
+      on-failure
 
 # Requisito do projeto: Uso correto de volumes para persistência de dados
 volumes:
