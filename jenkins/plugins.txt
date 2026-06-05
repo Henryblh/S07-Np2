@@ -1,0 +1,7 @@
+git
+pipeline-stage-view
+docker-workflow
+junit
+mailer
+email-ext
+credentials-binding

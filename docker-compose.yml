@@ -1,35 +1,64 @@
 version: '3.8'
-
 services:
-  # CONTAINER 1: O Banco de Dados MySQL
   mysql-db:
     image: mysql:8.0
-    container_name: petclinic-mysql
+    container_name: mysql-db
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=petclinic
-      - MYSQL_USER=petclinic
-      - MYSQL_PASSWORD=petclinic
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: petclinic
+    volumes:
+      - mysql-data:/var/lib/mysql
     ports:
       - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
+    networks:
+      - petclinic-net
 
-  # CONTAINER 2: A sua aplicação Spring PetClinic
   petclinic-app:
-    image: henryblh/petclinic:v1 # Puxando a imagem que você subiu pro Docker Hub
+    build: .
     container_name: petclinic-app
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=mysql
-      - SPRING_DATASOURCE_URL=jdbc:mysql://petclinic-mysql:3306/petclinic
     depends_on:
       - mysql-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/petclinic?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+    ports:
+      - "8080:8080"
+    networks:
+      - petclinic-net
 
-    restart:
-      on-failure
+  jenkins:
+    build: ./jenkins
+    container_name: jenkins
+    privileged: true
+    user: root
+    environment:
+      - NOTIFICATION_EMAIL=${NOTIFICATION_EMAIL}
+    ports:
+      - "8081:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/workspace
+    networks:
+      - petclinic-net
+    depends_on:
+      - mailhog
 
-# Requisito do projeto: Uso correto de volumes para persistência de dados
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - petclinic-net
+
 volumes:
-  mysql_data:
+  mysql-data:
+  jenkins-home:
+
+networks:
+  petclinic-net:
+    driver: bridge
