@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "nicholasnkl/petclinic-s07"
+        // Puxando a variável do Docker Compose
         NOTIFICATION_EMAIL = "${env.NOTIFICATION_EMAIL}"
     }
 
@@ -15,30 +15,36 @@ pipeline {
 
         stage('Test & Coverage') {
             steps {
+                // Roda os testes e gera os relatórios
                 sh 'mvn clean test jacoco:report'
             }
             post {
                 always {
+                    // Lê o resultado dos testes
                     junit 'target/surefire-reports/*.xml'
-                    archiveArtifacts artifacts: 'target/site/jacoco/index.html', fingerprint: true
+                    // CORREÇÃO: Salva a pasta INTEIRA do relatório Jacoco
+                    archiveArtifacts artifacts: 'target/site/jacoco/**/*', fingerprint: true
                 }
             }
         }
 
         stage('Build & Package') {
             steps {
+                // Empacota o .jar
                 sh 'mvn package -DskipTests'
+                // Salva o .jar gerado como artefato
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
 
         stage('Notify Email') {
             steps {
-                script
-                {def status = currentBuild.currentResult
-                                    mail to: "${env.NOTIFICATION_EMAIL}",
-                                         subject: "Pipeline Status: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
-                                         body: "Pipeline finished with status: ${status}. See artifacts at ${env.BUILD_URL}"
+                // CORREÇÃO: Usa exclusivamente o script do seu colega, nada de plugins visuais!
+                script {
+                    export JOB_STATUS="SUCCESS"
+                    // Dá permissão de execução e roda o script
+                    sh 'chmod +x ./jenkins/send_notification.sh'
+                    sh './jenkins/send_notification.sh'
                 }
             }
         }
@@ -46,9 +52,11 @@ pipeline {
 
     post {
         failure {
+            // Se o pipeline falhar antes de chegar no estágio de e-mail, ele avisa também
             script {
                 export JOB_STATUS="FAILED"
-                sh '/workspace/jenkins/send_notification.sh'
+                sh 'chmod +x ./jenkins/send_notification.sh'
+                sh './jenkins/send_notification.sh'
             }
         }
     }
