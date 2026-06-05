@@ -34,8 +34,11 @@ pipeline {
 
         stage('Notify Email') {
             steps {
-                script {
-                sh "JOB_STATUS=${currentBuild.currentResult} /workspace/jenkins/send_notification.sh"
+                script
+                {def status = currentBuild.currentResult
+                                    mail to: "${env.NOTIFICATION_EMAIL}",
+                                         subject: "Pipeline Status: ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
+                                         body: "Pipeline finished with status: ${status}. See artifacts at ${env.BUILD_URL}"
                 }
             }
         }
