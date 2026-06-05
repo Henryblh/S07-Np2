@@ -35,10 +35,7 @@ pipeline {
         stage('Notify Email') {
             steps {
                 script {
-                    sh '''
-                        export JOB_STATUS=${currentBuild.currentResult}
-                        /workspace/jenkins/send_notification.sh
-                    '''
+                sh "JOB_STATUS=${currentBuild.currentResult} /workspace/jenkins/send_notification.sh"
                 }
             }
         }
