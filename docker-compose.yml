@@ -1,62 +1,84 @@
 version: '3.8'
+
 services:
+
+  # CONTAINER 1: Banco de Dados MySQL
   mysql-db:
     image: mysql:8.0
-    container_name: mysql-db
+    container_name: petclinic-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: petclinic
-    volumes:
-      - mysql-data:/var/lib/mysql
+      MYSQL_USER: petclinic
+      MYSQL_PASSWORD: petclinic
+
     ports:
       - "3306:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
     networks:
       - petclinic-net
 
+  # CONTAINER 2: Aplicação Spring PetClinic
   petclinic-app:
-    build: .
+    image: henryblh/petclinic:v1
     container_name: petclinic-app
-    depends_on:
-      - mysql-db
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/petclinic?allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
+    restart: on-failure
+
     ports:
       - "8080:8080"
+
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/petclinic
+
+    depends_on:
+      - mysql-db
+
     networks:
       - petclinic-net
 
+  # CONTAINER 3: Jenkins
   jenkins:
     build: ./jenkins
     container_name: jenkins
     privileged: true
     user: root
+
     environment:
-      - NOTIFICATION_EMAIL=${NOTIFICATION_EMAIL}
+      NOTIFICATION_EMAIL: ${NOTIFICATION_EMAIL}
+
     ports:
       - "8081:8080"
       - "50000:50000"
+
     volumes:
       - jenkins-home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
       - ./:/workspace
-    networks:
-      - petclinic-net
+
     depends_on:
       - mailhog
 
+    networks:
+      - petclinic-net
+
+  # CONTAINER 4: MailHog
   mailhog:
     image: mailhog/mailhog
     container_name: mailhog
+
     ports:
       - "1025:1025"
       - "8025:8025"
+
     networks:
       - petclinic-net
 
 volumes:
-  mysql-data:
+  mysql_data:
   jenkins-home:
 
 networks:
