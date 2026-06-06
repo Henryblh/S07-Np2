@@ -1,83 +1,92 @@
-# Spring PetClinic - Projeto S07 (NP2)
+# Projeto S07 (NP2) - Aplicando DevOps na Prática
 
-Este repositório contém a aplicação Spring PetClinic, adaptada para atender aos requisitos de DevOps (CI/CD e Infraestrutura como Código) da disciplina S07.
+## 🐾 Visão Geral do Sistema e Funcionalidades
 
-A aplicação é um sistema de gerenciamento de clínica veterinária construído com Spring Boot, Java 17 e Maven.
+O sistema base escolhido para a aplicação DevOps foi o **Spring PetClinic**. É uma aplicação web em Java (Spring Boot) desenvolvida para gerenciar uma clínica veterinária.
+
+**Principais Funcionalidades da Aplicação:**
+* Cadastro e gestão de Médicos Veterinários e suas especialidades.
+* Cadastro de Tutores (Owners) e seus respectivos Pets.
+* Agendamento e histórico de Visitas à clínica.
+* Persistência de dados utilizando um banco de dados relacional (MySQL).
+
+**Principais Funcionalidades da Infraestrutura DevOps:**
+* **Pipeline As Code:** Automação completa de Testes, Build e Notificação via `Jenkinsfile`.
+* **Infraestrutura como Código:** Orquestração de 4 containers simulando um ambiente real (Aplicação, Banco de Dados, Servidor de CI/CD e Servidor de E-mail).
 
 ---
 
 ## 🛠️ Pré-requisitos
 
-Para executar e trabalhar neste projeto na sua máquina, você precisará ter instalado:
-
-* Java 17 ou superior (JDK completo).
-* Git.
-* Docker e Docker Compose.
-* IDE recomendada: IntelliJ IDEA ou VS Code.
+Para executar este projeto localmente, você precisará ter instalado em sua máquina:
+* Docker
+* Docker Compose
+* Git
 
 ---
 
-## 🚀 Como executar o sistema (Modo DevOps)
-
-Toda a nossa infraestrutura está definida como código. A aplicação já está configurada para rodar em um container e se conectar automaticamente a um banco de dados MySQL, também em container.
+## 🚀 Instalação e Execução
 
 **Passo 1: Clone o repositório**
-Abra o seu terminal e rode:
-`git clone https://github.com/Henryblh/S07-Np2`
-`cd S07-Np2`
+```bash
+git clone https://github.com/Henryblh/S07-Np2
+cd S07-Np2
+```
 
-**Passo 2: Suba a infraestrutura com Docker Compose**
-Execute o comando abaixo na raiz do projeto para baixar as imagens e iniciar a rede de containers em segundo plano:
-`docker compose up -d`
+**Passo 2: Configure as Variáveis de Ambiente**
+O pipeline exige um e-mail de destino configurado dinamicamente.
+1. Encontre o arquivo `.env.example` na raiz do projeto.
+2. Renomeie-o para `.env` (ou crie uma cópia com este nome).
+3. Insira o e-mail desejado: `NOTIFICATION_EMAIL=seu_email@teste.com`
 
-**Passo 3: Acesse a aplicação**
-Aguarde alguns segundos para o banco de dados inicializar e o Spring Boot conectar.
-Abra o seu navegador e acesse: `http://localhost:8080/`
+**Passo 3: Suba a Infraestrutura**
+Execute o comando abaixo para construir as imagens necessárias e iniciar os 4 containers em segundo plano:
+```bash
+docker compose up -d --build
+```
 
-**Passo 4: Acompanhe os logs (Opcional)**
-Para verificar o status da aplicação ou debugar erros, use os comandos:
-* Logs da aplicação: `docker compose logs -f petclinic-app`
-* Logs do banco de dados: `docker compose logs -f mysql-db`
+**Passo 4: Acesso aos Serviços**
+Após alguns segundos para a inicialização dos serviços, acesse pelo navegador:
+* **Aplicação PetClinic:** `http://localhost:8080/`
+* **Jenkins (Painel de CI/CD):** `http://localhost:8081/`
+* **MailHog (Caixa de E-mail):** `http://localhost:8025/`
 
-**Passo 5: Para desligar o sistema**
-Quando terminar de testar, derrube a infraestrutura com segurança (os dados do banco serão salvos nos volumes do Docker):
-`docker compose down`
-
----
-
-## ⚙️ Configuração do Banco de Dados
-
-Por padrão, a aplicação pura usa um banco em memória (H2). No entanto, para atender aos requisitos do projeto (comunicação entre containers e persistência), nós configuramos o perfil `mysql`.
-
-O arquivo `docker-compose.yml` já injeta as seguintes variáveis de ambiente no container da aplicação automaticamente:
-* `SPRING_PROFILES_ACTIVE=mysql`
-* `SPRING_DATASOURCE_URL=jdbc:mysql://petclinic-mysql:3306/petclinic`
-
-Você não precisa instalar o MySQL na sua máquina. O Docker gerencia tudo.
+Para encerrar a aplicação e destruir os containers (mantendo os dados salvos nos volumes), execute:
+```bash
+docker compose down
+```
 
 ---
 
-## 🧪 Como rodar os testes localmente
+## ⚙️ Arquitetura dos Containers
 
-O projeto exige uma cobertura de testes $\ge90\%$. Para rodar a suíte de testes unitários e de integração via linha de comando, execute:
-
-No Windows:
-`./mvnw test`
-
-No Linux/Mac:
-`./mvnw test`
-
-O Maven irá gerar os relatórios de execução na pasta `target/surefire-reports/`.
+A nossa infraestrutura atende ao requisito de 4+ containers, orquestrados da seguinte forma:
+1. **petclinic-app:** Container da aplicação gerado via `Dockerfile` e baixado do Docker Hub (`henryblh/petclinic:v1`).
+2. **petclinic-mysql:** Banco de dados MySQL 8.0, comunicando-se com a aplicação via rede interna `petclinic-net`.
+3. **jenkins:** Servidor de automação construído localmente via `./jenkins/Dockerfile` (instalando Maven, Docker e cURL).
+4. **mailhog:** Servidor SMTP de testes para interceptar o envio de e-mails do pipeline.
 
 ---
 
-## 🚧 Próximos Passos (Fase 2 - Jenkins e Automação)
+## 🤖 Uso de Inteligência Artificial
 
-A infraestrutura atual contempla **2 containers** (Aplicação via Docker Hub + MySQL local).
-Para finalizar a entrega da NP2, as seguintes etapas devem ser construídas:
+Conforme os requisitos da disciplina, documentamos abaixo o uso de ferramentas de IA durante o desenvolvimento do projeto.
 
-1. **Adicionar o Container do Jenkins:** Incluir o serviço do Jenkins no `docker-compose.yml` utilizando um `Dockerfile` local.
-2. **Adicionar o Container de E-mail:** Subir um serviço como o MailHog no `docker-compose.yml` para receber a notificação final.
-3. **Criar o Jenkinsfile:** Automatizar as etapas de Teste, Build e Envio de E-mail sem usar a interface gráfica.
-4. **Gerenciar Artefatos:** Garantir que o `.jar` gerado e o relatório de testes fiquem salvos no Jenkins.
-5. **Preencher a seção de IA:** Documentar o uso de Inteligência Artificial no final deste README.
+* **Modelos Utilizados:** Gemini.
+* **Para quê foram usados:** Debugging de erros do `Jenkinsfile`, correção de sintaxe de arquivos YAML
+* **Dinâmica de uso:** A ferramenta foi utilizada como um assistente de "Pair Programming". Quando um erro de terminal ou quebra de build ocorria, os logs eram submetidos à IA para análise e proposta de correção.
+
+### Exemplos Reais de Prompts
+
+**Prompt 1: Correção de sintaxe no Docker Compose**
+* **Prompt:** *"foi feito alterações no dockercompose deve ter adiciona e apagado algo sem queren... [código do colega]. [codigo antigo] Essa é a nossa que esta funcionado. qual foi a mundaça? a mudança explica o erro? é possivel mesclar as duas sem quebrar a estrutura?"*
+* **Resultado:** A IA identificou que as alterações do YAML do colega e que variáveis essenciais (como o perfil do MySQL) haviam sido apagadas. A resposta foi **aceita e integrada**, mesclando os serviços antigos com os novos.
+
+**Prompt 2: Erro de variável de ambiente no Jenkinsfile**
+* **Prompt:** *"[Log de erro: java.lang.NoSuchMethodError: No such DSL method 'export' found]. o console registra um erro apenas na ultima etapa"*
+* **Resultado:** A IA explicou que o comando `export` nativo do Linux não funciona dentro do bloco `script` do Groovy no Jenkins. Sugeriu a substituição pela função `withEnv`. A resposta foi **aceita e implementada**, resolvendo a quebra do pipeline.
+
+**Prompt 3: Falha no pacote Sendmail do Linux**
+* **Prompt:** *"[Log de erro: sendmail: illegal option -- S]. Erros diferentes eu acho interprete."*
+* **Resultado:** A IA diagnosticou que a imagem base do Jenkins usa uma versão do Debian incompatível com a flag `-S` do `sendmail` usada no script. A sugestão foi reescrever o script `send_notification.sh` utilizando o comando nativo `curl smtp://`. A resposta foi **aceita**, evitando a necessidade de reconstruir os containers com novos pacotes.
+
